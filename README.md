@@ -50,21 +50,13 @@ Welcome to 90s Retro Car Racer! A fast-paced, arcade-style driving game where yo
 2.  Save this README content as `README.md` in the same directory.
 3.  Open `index.html` in any modern web browser.
 
-## 🌐 Publishing (Your URL Here!)
+## 🌐 Publishing
 
-This game is currently hosted at: `[Link to your GitHub Pages, Netlify, Vercel, or itch.io page will go here]`
-
-*(This section is a placeholder for you to fill in once you've hosted the game.)*
+This game is currently hosted at: `[https://lalitsurampudi.github.io/RetroCarRacer]`
 
 ## 🧑‍💻 Author
 
-`[Your Name / Handle Here]`
-
-*(Feel free to replace this with your information.)*
-
-## 📜 License
-
-*(Optional: You can add a license here, e.g., MIT License. If you're unsure, you can omit this or visit choosealicense.com for options.)*
+`[Lalit Surampudi / @lalitsurampudi]`
 
 ---
 
