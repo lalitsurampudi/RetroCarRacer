@@ -681,8 +681,8 @@
             let mainSignTextSize = 12 * scaleFactor * 1.4 * signSizeReductionFactor;
             let mainSignNumberSize = 28 * scaleFactor * 1.4 * signSizeReductionFactor;
             const mainSignCornerRadius = 6 * scaleFactor * signSizeReductionFactor;
-            const mainSignPaddingX = 8 * scaleFactor * signSizeReductionFactor;
-            const mainSignPaddingY = 6 * scaleFactor * signSizeReductionFactor;
+            const mainSignPaddingX = 14 * scaleFactor * signSizeReductionFactor; // Even more padding
+            const mainSignPaddingY = 14 * scaleFactor * signSizeReductionFactor; // Even more padding
 
             const line1Font = `bold ${mainSignTextSize}px 'Press Start 2P'`;
             const line3Font = `bold ${mainSignNumberSize}px 'Press Start 2P'`;
@@ -697,7 +697,7 @@
 
             const mainSignFaceWidth = maxMainTextWidth + mainSignPaddingX * 2;
             const spacingBetweenLines = 4 * scaleFactor * signSizeReductionFactor;
-            const explicitGap = 12 * scaleFactor * signSizeReductionFactor; // Increased gap
+            const explicitGap = 25 * scaleFactor * signSizeReductionFactor; // Even more gap for space
 
             const mainSignFaceHeight = (mainSignPaddingY * 2) + mainSignTextSize + spacingBetweenLines + mainSignTextSize + explicitGap + mainSignNumberSize;
 
@@ -1018,8 +1018,8 @@
             let mainSignTextSize = 12 * scaleFactor * 1.4 * signSizeReductionFactor;
             let mainSignNumberSize = 28 * scaleFactor * 1.4 * signSizeReductionFactor;
             const mainSignCornerRadius = 6 * scaleFactor * signSizeReductionFactor;
-            const mainSignPaddingX = 8 * scaleFactor * signSizeReductionFactor;
-            const mainSignPaddingY = 6 * scaleFactor * signSizeReductionFactor;
+            const mainSignPaddingX = 14 * scaleFactor * signSizeReductionFactor; // Even more padding
+            const mainSignPaddingY = 14 * scaleFactor * signSizeReductionFactor; // Even more padding
 
             ctx.font = `bold ${mainSignTextSize}px 'Press Start 2P'`;
             const speedTextWidth = ctx.measureText("SPEED").width;
@@ -1029,7 +1029,7 @@
             const maxMainTextWidth = Math.max(speedTextWidth, limitTextWidth, numberTextWidth);
             const mainSignFaceWidth = maxMainTextWidth + mainSignPaddingX * 2;
             const spacingBetweenLines = 4 * scaleFactor * signSizeReductionFactor;
-            const explicitGap = 12 * scaleFactor * signSizeReductionFactor; // Increased gap for placeholder
+            const explicitGap = 25 * scaleFactor * signSizeReductionFactor; // Even more gap for placeholder
             const mainSignFaceHeight = (mainSignPaddingY * 2) + mainSignTextSize + spacingBetweenLines + mainSignTextSize + explicitGap + mainSignNumberSize;
 
             const mainSignFaceX = signAreaX + (signAreaActualWidth - mainSignFaceWidth) / 2;
