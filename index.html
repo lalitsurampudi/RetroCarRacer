@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>90s Retro Car Racer - Gemini Announcer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #1a1a1a;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            background-color: #000;
+            border: 5px solid #555;
+            border-radius: 10px;
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            background-color: #4a4a4a;
+            /* Road color */
+            border-radius: 5px;
+        }
+
+        .game-ui {
+            padding: 10px;
+            text-align: center;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .button-container {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .game-button {
+            background-color: #00A0A0;
+            color: #fff;
+            border: 2px solid #00FFFF;
+            padding: 10px 15px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 5px;
+            box-shadow: 0 4px #006060;
+            transition: all 0.1s ease;
+        }
+
+        .game-button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px #006060;
+        }
+
+        #gameOverMessage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.85);
+            padding: 30px;
+            border-radius: 10px;
+            border: 3px solid #ff0000;
+            text-align: center;
+            z-index: 10;
+            box-shadow: 0 0 15px #ff0000;
+        }
+
+        #touchControls {
+            display: none;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 10px;
+        }
+
+        .touch-button {
+            background-color: #d9534f;
+            color: #fff;
+            border: 2px solid #c9302c;
+            padding: 12px 18px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0 4px #b52b27;
+            user-select: none;
+        }
+
+        .touch-button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px #b52b27;
+        }
+
+        #announcerBox {
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #2a2a2a;
+            border: 2px solid #ff00ff;
+            border-radius: 5px;
+            min-height: 40px;
+            /* Ensure space for text */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #announcerText {
+            color: #00FFFF;
+            /* Cyan text */
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 700px) {
+            .game-button {
+                font-size: 12px;
+                padding: 8px 12px;
+            }
+
+            #touchControls {
+                display: flex;
+            }
+
+            .touch-button {
+                font-size: 14px;
+                padding: 10px 15px;
+            }
+
+            #gameOverMessage {
+                padding: 20px;
+                font-size: 0.9em;
+            }
+
+            #gameOverMessage h2 {
+                font-size: 1.2em;
+            }
+
+            .game-ui h1 {
+                font-size: 1.8em;
+            }
+
+            .game-ui {
+                max-width: 100%;
+            }
+
+            #announcerText {
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="game-ui">
+        <h1 class="text-3xl sm:text-4xl mb-2 text-green-400" style="text-shadow: 2px 2px #ff00ff;">Retro Car Racer</h1>
+        <div id="scoreBoard" class="text-xl sm:text-2xl">Score: <span id="score">0</span></div>
+        <div id="highScoreBoard" class="text-lg sm:text-xl mb-1">High Score: <span id="highScore">0</span></div>
+        <div id="announcerBox">
+            <span id="announcerText">Press Start to Race!</span>
+        </div>
+    </div>
+
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="gameOverMessage" class="hidden">
+            <h2 class="text-2xl sm:text-3xl mb-3 text-red-500">BUSTED!</h2>
+            <p class="mb-1">Your Score: <span id="finalScore">0</span></p>
+            <p class="mb-4">High Score: <span id="finalHighScore">0</span></p>
+            <button id="restartButton" class="game-button">Play Again</button>
+        </div>
+    </div>
+
+    <div class="button-container">
+        <button id="startButton" class="game-button">Start Game</button>
+    </div>
+
+    <div id="touchControls" class="mt-4">
+        <button id="touchLeft" class="touch-button">LEFT</button>
+        <button id="touchAccel" class="touch-button">ACCEL</button>
+        <button id="touchDecel" class="touch-button">DECEL</button>
+        <button id="touchRight" class="touch-button">RIGHT</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const highScoreDisplay = document.getElementById('highScore');
+        const announcerTextElement = document.getElementById('announcerText');
+        const gameOverMessage = document.getElementById('gameOverMessage');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const finalHighScoreDisplay = document.getElementById('finalHighScore');
+        const restartButton = document.getElementById('restartButton');
+        const startButton = document.getElementById('startButton');
+
+        const touchLeftButton = document.getElementById('touchLeft');
+        const touchRightButton = document.getElementById('touchRight');
+        const touchAccelButton = document.getElementById('touchAccel');
+        const touchDecelButton = document.getElementById('touchDecel');
+
+        let gameWidth = 320;
+        let gameHeight = 480;
+        const signAreaWidth = 120;
+
+        let playerCar;
+        const playerCarWidth = 35;
+        const playerCarHeight = 60;
+        const playerCarSideSpeed = 18;
+
+        let obstacles;
+        const baseObstacleWidth = 35;
+        const baseObstacleHeightCar = 60;
+        const baseObstacleHeightPit = 30;
+
+        let obstacleSpawnInterval = 1500;
+        let lastObstacleSpawnTime = 0;
+
+        let roadLines;
+        const roadLineWidth = 10;
+        const roadLineHeight = 50;
+
+        let score = 0;
+        let highScore = localStorage.getItem('retroCarHighScoreV2') || 0;
+        let gameRunning = false;
+        let animationFrameId;
+        let gameTime = 0;
+
+        let playerGear = 1;
+        const maxGear = 5;
+        const minGear = 1;
+        let currentMPH = 0;
+        const mphPerGear = 25;
+        const speedLimitPolice = 80;
+        const speedLimitSignFlash = 120;
+        let policeCar = null;
+        let policeFlashTimer = 0;
+        const policeFlashInterval = 15;
+        let signFlashCounter = 0;
+
+        // --- Gemini API Announcer ---
+        const announcerLoadingText = "...";
+
+        async function callGeminiAnnouncer(situation) {
+            announcerTextElement.textContent = announcerLoadingText;
+            let prompt = "You are a cheesy, over-the-top 90s arcade car racing game announcer. Keep your commentary short, punchy, and exciting (max 15 words). ";
+
+            switch (situation) {
+                case 'game_start':
+                    prompt += "The race is about to begin! Give an epic starting line.";
+                    break;
+                case 'police_chase':
+                    prompt += "The police are now chasing the player! What's your call?";
+                    break;
+                case 'crash_obstacle':
+                    prompt += "The player just crashed into an obstacle! Give a dramatic game over line.";
+                    break;
+                case 'busted_police':
+                    prompt += "The player got busted by the police! What's the verdict, announcer?";
+                    break;
+                case 'new_high_score':
+                    prompt += `The player just got a new high score of ${highScore}! Announce this amazing achievement!`;
+                    break;
+                case 'speed_warning':
+                    prompt += `The player is speeding over ${speedLimitPolice} MPH! Give a quick, excited warning!`;
+                    break;
+                default:
+                    announcerTextElement.textContent = "Let's Race!"; // Default if no specific situation
+                    return;
+            }
+
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }]
+            };
+            const apiKey = ""; // Leave empty, Canvas will provide it
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    announcerTextElement.textContent = result.candidates[0].content.parts[0].text;
+                } else {
+                    console.warn("Gemini API response structure unexpected or content missing.", result);
+                    announcerTextElement.textContent = "Mic check...1...2...";
+                }
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                announcerTextElement.textContent = "Announcer's on a break!";
+            }
+        }
+
+
+        // Helper function to draw rounded rectangles
+        function drawRoundedRect(x, y, width, height, radius, fillStyle, strokeStyle = null, lineWidth = 1) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+
+            if (fillStyle) {
+                ctx.fillStyle = fillStyle;
+                ctx.fill();
+            }
+            if (strokeStyle) {
+                ctx.strokeStyle = strokeStyle;
+                ctx.lineWidth = lineWidth;
+                ctx.stroke();
+            }
+        }
+
+
+        // --- Initialization and Game State ---
+        function initGame() {
+            const container = document.getElementById('gameContainer');
+            const totalGameWidthWithSign = gameWidth + signAreaWidth;
+            const aspectRatio = totalGameWidthWithSign / gameHeight;
+
+            let newWidth = Math.min(window.innerWidth * 0.95, 700);
+            let newHeight = newWidth / aspectRatio;
+
+            if (newHeight > window.innerHeight * 0.70) {
+                newHeight = window.innerHeight * 0.70;
+                newWidth = newHeight * aspectRatio;
+            }
+
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+
+            const scaleFactor = (canvas.width * (gameWidth / totalGameWidthWithSign)) / gameWidth;
+
+            playerCar = {
+                x: (canvas.width * (gameWidth / totalGameWidthWithSign)) / 2 - (playerCarWidth * scaleFactor) / 2,
+                y: canvas.height - (playerCarHeight * scaleFactor) - 15 * scaleFactor,
+                width: playerCarWidth * scaleFactor,
+                height: playerCarHeight * scaleFactor,
+                color: '#FF0000',
+            };
+
+            obstacles = [];
+            roadLines = [];
+            score = 0;
+            gameTime = 0;
+            playerGear = 1;
+            updateSpeed();
+            lastObstacleSpawnTime = 0;
+            policeCar = null;
+
+            scoreDisplay.textContent = score;
+            highScoreDisplay.textContent = highScore;
+            gameOverMessage.classList.add('hidden');
+            gameRunning = true;
+
+            const roadAreaWidth = canvas.width * (gameWidth / totalGameWidthWithSign);
+            for (let i = 0; i < Math.ceil(canvas.height / (roadLineHeight * scaleFactor + 20 * scaleFactor)) + 1; i++) {
+                roadLines.push({
+                    x: roadAreaWidth / 2 - (roadLineWidth * scaleFactor) / 2,
+                    y: i * (roadLineHeight * scaleFactor + 20 * scaleFactor),
+                    width: roadLineWidth * scaleFactor,
+                    height: roadLineHeight * scaleFactor
+                });
+            }
+            callGeminiAnnouncer('game_start');
+            loop();
+        }
+
+        function startGame() {
+            startButton.classList.add('hidden');
+            initGame();
+        }
+
+        function restartGame() {
+            gameOverMessage.classList.add('hidden');
+            startButton.classList.remove('hidden');
+            announcerTextElement.textContent = "Press Start to Race!";
+        }
+
+        function updateSpeed() {
+            const oldMPH = currentMPH;
+            currentMPH = playerGear * mphPerGear;
+            if (currentMPH >= speedLimitPolice && oldMPH < speedLimitPolice && !policeCar && gameRunning) {
+                spawnPoliceCar();
+            } else if (currentMPH > speedLimitPolice && oldMPH <= speedLimitPolice && gameRunning && !policeCar) {
+                callGeminiAnnouncer('speed_warning');
+            }
+        }
+
+        // --- Game Loop ---
+        function loop(currentTime) {
+            if (!gameRunning) return;
+            update(currentTime);
+            draw();
+            animationFrameId = requestAnimationFrame(loop);
+        }
+
+        // --- Update Game Logic ---
+        function update(currentTime) {
+            gameTime += 16;
+            const roadAreaWidth = canvas.width * (gameWidth / (gameWidth + signAreaWidth));
+            const scaleFactor = roadAreaWidth / gameWidth;
+            const currentBaseScrollSpeed = playerGear * 1.5 * scaleFactor;
+
+            roadLines.forEach(line => {
+                line.y += currentBaseScrollSpeed;
+                if (line.y > canvas.height) {
+                    line.y = -(line.height + 10 * scaleFactor);
+                }
+            });
+
+            if (currentTime - lastObstacleSpawnTime > obstacleSpawnInterval) {
+                spawnObstacle();
+                lastObstacleSpawnTime = currentTime;
+            }
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                if (obs.type === 'car') {
+                    obs.y += currentBaseScrollSpeed + obs.relativeSpeed * scaleFactor;
+                } else {
+                    obs.y += currentBaseScrollSpeed;
+                }
+
+                if (checkCollision(playerCar, obs)) {
+                    gameOver("CRASHED!", 'crash_obstacle');
+                    return;
+                }
+
+                if (obs.y > canvas.height) {
+                    obstacles.splice(i, 1);
+                    if (obs.type !== 'pit') {
+                        score++;
+                        scoreDisplay.textContent = score;
+                    }
+                }
+            }
+
+            if (policeCar) {
+                policeCar.y += (currentBaseScrollSpeed + policeCar.relativeSpeed * scaleFactor);
+                if (policeCar.x < playerCar.x - policeCar.width / 3) policeCar.x += 1.5 * scaleFactor;
+                if (policeCar.x > playerCar.x + playerCar.width / 3) policeCar.x -= 1.5 * scaleFactor;
+
+                if (checkCollision(playerCar, policeCar)) {
+                    gameOver("BUSTED BY POLICE!", 'busted_police');
+                    return;
+                }
+                if (policeCar.y > canvas.height + policeCar.height) {
+                    policeCar = null;
+                }
+                policeFlashTimer = (policeFlashTimer + 1) % (policeFlashInterval * 2);
+            }
+
+            if (gameTime > 0 && gameTime % 10000 < 16) {
+                obstacleSpawnInterval = Math.max(500, obstacleSpawnInterval * 0.90);
+            }
+            signFlashCounter++;
+        }
+
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                rect1.x + rect1.width > rect2.x &&
+                rect1.y < rect2.y + rect2.height &&
+                rect1.y + rect1.height > rect2.y;
+        }
+
+        // --- Drawing ---
+        function draw() {
+            const roadAreaWidth = canvas.width * (gameWidth / (gameWidth + signAreaWidth));
+            const scaleFactor = roadAreaWidth / gameWidth;
+
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#4a4a4a';
+            ctx.fillRect(0, 0, roadAreaWidth, canvas.height);
+
+            const shoulderWidth = 30 * scaleFactor;
+            ctx.fillStyle = '#303030';
+            ctx.fillRect(0, 0, shoulderWidth, canvas.height);
+            ctx.fillRect(roadAreaWidth - shoulderWidth, 0, shoulderWidth, canvas.height);
+
+            const grassWidth = 25 * scaleFactor;
+            ctx.fillStyle = '#004d00';
+            ctx.fillRect(0, 0, grassWidth, canvas.height);
+            ctx.fillRect(roadAreaWidth - grassWidth, 0, grassWidth, canvas.height);
+
+            ctx.fillStyle = '#cccccc';
+            roadLines.forEach(line => {
+                ctx.fillRect(line.x, line.y, line.width, line.height);
+            });
+
+            ctx.fillStyle = playerCar.color;
+            ctx.fillRect(playerCar.x, playerCar.y, playerCar.width, playerCar.height);
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(playerCar.x + playerCar.width * 0.15, playerCar.y + playerCar.height * 0.1, playerCar.width * 0.7, playerCar.height * 0.25);
+            ctx.fillStyle = '#333333';
+            ctx.fillRect(playerCar.x - 3 * scaleFactor, playerCar.y + playerCar.height * 0.2, 3 * scaleFactor, playerCar.height * 0.6);
+            ctx.fillRect(playerCar.x + playerCar.width, playerCar.y + playerCar.height * 0.2, 3 * scaleFactor, playerCar.height * 0.6);
+
+            obstacles.forEach(obs => {
+                ctx.fillStyle = obs.color;
+                if (obs.type === 'pit') {
+                    ctx.beginPath();
+                    ctx.ellipse(obs.x + obs.width / 2, obs.y + obs.height / 2, obs.width / 2, obs.height / 2.5, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                    ctx.fillRect(obs.x + obs.width * 0.15, obs.y + obs.height * 0.1, obs.width * 0.7, obs.height * 0.25);
+                }
+            });
+
+            if (policeCar) {
+                ctx.fillStyle = policeCar.color;
+                ctx.fillRect(policeCar.x, policeCar.y, policeCar.width, policeCar.height);
+                const lightWidth = policeCar.width * 0.25;
+                const lightHeight = policeCar.height * 0.1;
+                if (policeFlashTimer < policeFlashInterval) {
+                    ctx.fillStyle = 'red';
+                    ctx.fillRect(policeCar.x + policeCar.width * 0.15, policeCar.y, lightWidth, lightHeight);
+                    ctx.fillStyle = 'blue';
+                    ctx.fillRect(policeCar.x + policeCar.width * 0.6, policeCar.y, lightWidth, lightHeight);
+                } else {
+                    ctx.fillStyle = 'blue';
+                    ctx.fillRect(policeCar.x + policeCar.width * 0.15, policeCar.y, lightWidth, lightHeight);
+                    ctx.fillStyle = 'red';
+                    ctx.fillRect(policeCar.x + policeCar.width * 0.6, policeCar.y, lightWidth, lightHeight);
+                }
+            }
+
+            // Draw Speed Sign UI on the right
+            const signAreaX = roadAreaWidth;
+            const signAreaActualWidth = canvas.width - roadAreaWidth;
+            const signSizeReductionFactor = 0.9;
+
+            // --- Main Speed Limit Sign ---
+            let mainSignTextSize = 12 * scaleFactor * 1.4 * signSizeReductionFactor;
+            let mainSignNumberSize = 28 * scaleFactor * 1.4 * signSizeReductionFactor;
+            const mainSignCornerRadius = 6 * scaleFactor * signSizeReductionFactor;
+            const mainSignPaddingX = 8 * scaleFactor * signSizeReductionFactor;
+            const mainSignPaddingY = 6 * scaleFactor * signSizeReductionFactor;
+
+            const line1Font = `bold ${mainSignTextSize}px 'Press Start 2P'`;
+            const line3Font = `bold ${mainSignNumberSize}px 'Press Start 2P'`;
+
+            ctx.font = line1Font;
+            const speedTextWidth = ctx.measureText("SPEED").width;
+            const limitTextWidth = ctx.measureText("LIMIT").width;
+            ctx.font = line3Font;
+            const numberTextWidth = ctx.measureText(speedLimitPolice.toString()).width;
+            const maxMainTextWidth = Math.max(speedTextWidth, limitTextWidth, numberTextWidth);
+
+            const mainSignFaceWidth = maxMainTextWidth + mainSignPaddingX * 2;
+            const spacingBetweenLines = 4 * scaleFactor * signSizeReductionFactor;
+            const explicitGap = 6 * scaleFactor * signSizeReductionFactor;
+
+            const mainSignFaceHeight = (mainSignPaddingY * 2) + mainSignTextSize + spacingBetweenLines + mainSignTextSize + explicitGap + mainSignNumberSize;
+
+            const mainSignFaceX = signAreaX + (signAreaActualWidth - mainSignFaceWidth) / 2;
+            const mainSignFaceY = canvas.height * 0.05 + (canvas.height * 0.45 - (mainSignFaceHeight * 2 + 10 * scaleFactor * signSizeReductionFactor)) / 2; // Center signs vertically
+
+            drawRoundedRect(mainSignFaceX, mainSignFaceY, mainSignFaceWidth, mainSignFaceHeight, mainSignCornerRadius, '#FFFFFF', '#000000', 2 * scaleFactor * signSizeReductionFactor);
+
+            ctx.fillStyle = '#000000';
+            ctx.textAlign = 'center';
+
+            let currentBaselineY = mainSignFaceY + mainSignPaddingY + mainSignTextSize;
+            ctx.font = line1Font;
+            ctx.fillText("SPEED", mainSignFaceX + mainSignFaceWidth / 2, currentBaselineY);
+
+            currentBaselineY += mainSignTextSize + spacingBetweenLines;
+            ctx.font = line1Font; // Re-set font for "LIMIT" as it's same size as "SPEED"
+            ctx.fillText("LIMIT", mainSignFaceX + mainSignFaceWidth / 2, currentBaselineY);
+
+            currentBaselineY += mainSignTextSize + explicitGap;
+            ctx.font = line3Font;
+            ctx.fillText(speedLimitPolice.toString(), mainSignFaceX + mainSignFaceWidth / 2, currentBaselineY);
+
+
+            // --- "Your Speed" Sign ---
+            const yourSpeedSignFaceWidth = mainSignFaceWidth;
+            const yourSpeedSignFaceHeight = mainSignFaceHeight;
+            const yourSpeedSignCornerRadius = mainSignCornerRadius;
+
+            const yourSpeedSignFaceX = mainSignFaceX;
+            const yourSpeedSignFaceY = mainSignFaceY + mainSignFaceHeight + 10 * scaleFactor * signSizeReductionFactor;
+
+            let yourSpeedFillStyle = '#000000';
+            let yourSpeedStrokeStyle = '#FFFFFF';
+            let yourSpeedLabelColor = '#FFFFFF';
+            let currentSpeedNumberColor = '#FFFFFF';
+
+            if (currentMPH >= speedLimitSignFlash) {
+                if (signFlashCounter % 20 < 10) {
+                    currentSpeedNumberColor = 'red';
+                } else {
+                    currentSpeedNumberColor = 'white';
+                }
+            }
+            drawRoundedRect(yourSpeedSignFaceX, yourSpeedSignFaceY, yourSpeedSignFaceWidth, yourSpeedSignFaceHeight, yourSpeedSignCornerRadius, yourSpeedFillStyle, yourSpeedStrokeStyle, 1.5 * scaleFactor * signSizeReductionFactor);
+
+            // Use same font sizes as main sign for consistency in the new layout
+            let yourSpeedLine1FontSize = mainSignTextSize;
+            let yourSpeedLine3FontSize = mainSignNumberSize;
+
+            const yourSpeedLine1Font = `bold ${yourSpeedLine1FontSize}px 'Press Start 2P'`;
+            const yourSpeedLine3Font = `bold ${yourSpeedLine3FontSize}px 'Press Start 2P'`;
+
+
+            let currentYourSpeedBaselineY = yourSpeedSignFaceY + mainSignPaddingY + yourSpeedLine1FontSize;
+            ctx.font = yourSpeedLine1Font;
+            ctx.fillStyle = yourSpeedLabelColor;
+            ctx.fillText('YOUR', yourSpeedSignFaceX + yourSpeedSignFaceWidth / 2, currentYourSpeedBaselineY);
+
+            currentYourSpeedBaselineY += yourSpeedLine1FontSize + spacingBetweenLines;
+            ctx.font = yourSpeedLine1Font; // Re-set font for "SPEED"
+            ctx.fillText('SPEED', yourSpeedSignFaceX + yourSpeedSignFaceWidth / 2, currentYourSpeedBaselineY);
+
+            currentYourSpeedBaselineY += yourSpeedLine1FontSize + explicitGap;
+            ctx.fillStyle = currentSpeedNumberColor;
+            ctx.font = yourSpeedLine3Font;
+            ctx.fillText(currentMPH.toString(), yourSpeedSignFaceX + yourSpeedSignFaceWidth / 2, currentYourSpeedBaselineY);
+        }
+
+        // --- Obstacle Logic ---
+        function spawnObstacle() {
+            const roadAreaWidth = canvas.width * (gameWidth / (gameWidth + signAreaWidth));
+            const scaleFactor = roadAreaWidth / gameWidth;
+            const type = Math.random() < 0.35 ? 'pit' : 'car';
+
+            const shoulderAndGrassWidth = (30 + 25) * scaleFactor;
+            let obsWidth, obsHeight, color, relativeSpeed = 0;
+
+            if (type === 'pit') {
+                obsWidth = (baseObstacleWidth + Math.random() * 15) * scaleFactor;
+                obsHeight = baseObstacleHeightPit * scaleFactor * (Math.random() * 0.5 + 0.8);
+                color = '#101010';
+            } else {
+                obsWidth = baseObstacleWidth * scaleFactor * (Math.random() * 0.2 + 0.9);
+                obsHeight = baseObstacleHeightCar * scaleFactor * (Math.random() * 0.2 + 0.9);
+                const carColors = ['#00BFFF', '#FFD700', '#32CD32', '#FF69B4', '#9370DB', '#FFA500', '#8A2BE2'];
+                color = carColors[Math.floor(Math.random() * carColors.length)];
+                relativeSpeed = (Math.random() * 2.0 + 0.5) * (currentMPH / 50 + 0.5);
+            }
+
+            const minX = shoulderAndGrassWidth;
+            const maxX = roadAreaWidth - shoulderAndGrassWidth - obsWidth;
+            if (maxX <= minX) {
+                console.warn("Road too narrow for obstacle spawn, skipping.");
+                return;
+            }
+            const x = Math.random() * (maxX - minX) + minX;
+            const y = -obsHeight;
+
+            obstacles.push({ x, y, width: obsWidth, height: obsHeight, color, type, relativeSpeed });
+        }
+
+        function spawnPoliceCar() {
+            if (policeCar) return;
+            const roadAreaWidth = canvas.width * (gameWidth / (gameWidth + signAreaWidth));
+            const scaleFactor = roadAreaWidth / gameWidth;
+            const policeCarWidthScaled = playerCarWidth * 1.1 * scaleFactor;
+            const policeCarHeightScaled = playerCarHeight * 1.1 * scaleFactor;
+
+            const shoulderAndGrassWidth = (30 + 25) * scaleFactor;
+            const minX = shoulderAndGrassWidth;
+            const maxX = roadAreaWidth - shoulderAndGrassWidth - policeCarWidthScaled;
+
+            policeCar = {
+                x: playerCar.x,
+                y: -policeCarHeightScaled * 3,
+                width: policeCarWidthScaled,
+                height: policeCarHeightScaled,
+                color: '#00008B',
+                relativeSpeed: 3.0 + Math.random() * 0.5 + (currentMPH / 100),
+                type: 'police'
+            };
+            callGeminiAnnouncer('police_chase');
+        }
+
+        // --- Game Over ---
+        async function gameOver(message = "GAME OVER!", announcerKey = 'crash_obstacle') {
+            gameRunning = false;
+            cancelAnimationFrame(animationFrameId);
+            const isNewHighScore = score > highScore;
+            if (isNewHighScore) {
+                highScore = score;
+                localStorage.setItem('retroCarHighScoreV2', highScore);
+                callGeminiAnnouncer('new_high_score');
+            } else {
+                callGeminiAnnouncer(announcerKey);
+            }
+
+            finalScoreDisplay.textContent = score;
+            finalHighScoreDisplay.textContent = highScore;
+            highScoreDisplay.textContent = highScore;
+            gameOverMessage.querySelector('h2').textContent = message;
+            gameOverMessage.classList.remove('hidden');
+            startButton.classList.remove('hidden');
+        }
+
+        // --- Event Listeners ---
+        function handleKeyDown(e) {
+            if (!gameRunning && e.key !== 'Enter') return;
+            if (!gameRunning && e.key === 'Enter') {
+                if (!gameOverMessage.classList.contains('hidden')) restartGame();
+                return;
+            }
+
+            const roadAreaWidth = canvas.width * (gameWidth / (gameWidth + signAreaWidth));
+            const scaleFactor = roadAreaWidth / gameWidth;
+            const effectiveSideSpeed = playerCarSideSpeed * scaleFactor;
+            const drivableMinX = (30 + 25) * scaleFactor;
+            const drivableMaxX = roadAreaWidth - playerCar.width - drivableMinX;
+
+            if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
+                playerCar.x = Math.max(drivableMinX, playerCar.x - effectiveSideSpeed);
+            } else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
+                playerCar.x = Math.min(drivableMaxX, playerCar.x + effectiveSideSpeed);
+            } else if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') {
+                playerGear = Math.min(maxGear, playerGear + 1);
+                updateSpeed();
+            } else if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') {
+                playerGear = Math.max(minGear, playerGear - 1);
+                updateSpeed();
+            }
+        }
+
+        function handleTouch(action) {
+            if (!gameRunning) return;
+            const roadAreaWidth = canvas.width * (gameWidth / (gameWidth + signAreaWidth));
+            const scaleFactor = roadAreaWidth / gameWidth;
+            const effectiveSideSpeed = playerCarSideSpeed * scaleFactor * 1.2;
+            const drivableMinX = (30 + 25) * scaleFactor;
+            const drivableMaxX = roadAreaWidth - playerCar.width - drivableMinX;
+
+            if (action === 'left') {
+                playerCar.x = Math.max(drivableMinX, playerCar.x - effectiveSideSpeed);
+            } else if (action === 'right') {
+                playerCar.x = Math.min(drivableMaxX, playerCar.x + effectiveSideSpeed);
+            } else if (action === 'accel') {
+                playerGear = Math.min(maxGear, playerGear + 1);
+                updateSpeed();
+            } else if (action === 'decel') {
+                playerGear = Math.max(minGear, playerGear - 1);
+                updateSpeed();
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown);
+        restartButton.addEventListener('click', restartGame);
+        startButton.addEventListener('click', startGame);
+
+        touchLeftButton.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouch('left'); });
+        touchRightButton.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouch('right'); });
+        touchAccelButton.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouch('accel'); });
+        touchDecelButton.addEventListener('touchstart', (e) => { e.preventDefault(); handleTouch('decel'); });
+
+        let touchIntervals = { left: null, right: null, accel: null, decel: null };
+        function startTouchInterval(action) {
+            if (touchIntervals[action]) clearInterval(touchIntervals[action]);
+            touchIntervals[action] = setInterval(() => handleTouch(action), 100);
+        }
+        function endTouchInterval(action) {
+            if (touchIntervals[action]) clearInterval(touchIntervals[action]);
+            touchIntervals[action] = null;
+        }
+
+        ['left', 'right', 'accel', 'decel'].forEach(action => {
+            const button = document.getElementById(`touch${action.charAt(0).toUpperCase() + action.slice(1)}`);
+            button.addEventListener('mousedown', () => { if (isTouchDevice()) return; startTouchInterval(action); });
+            button.addEventListener('mouseup', () => { if (isTouchDevice()) return; endTouchInterval(action); });
+            button.addEventListener('mouseleave', () => { if (isTouchDevice()) return; endTouchInterval(action); });
+        });
+
+        function isTouchDevice() {
+            return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0);
+        }
+
+        if (isTouchDevice()) {
+            document.getElementById('touchControls').style.display = 'flex';
+        }
+
+        window.addEventListener('resize', () => {
+            const gameWasRunning = gameRunning;
+            if (gameRunning) {
+                cancelAnimationFrame(animationFrameId);
+                gameRunning = false;
+            }
+
+            const totalGameWidthWithSign = gameWidth + signAreaWidth;
+            const aspectRatio = totalGameWidthWithSign / gameHeight;
+            let newWidth = Math.min(window.innerWidth * 0.95, 700);
+            let newHeight = newWidth / aspectRatio;
+            if (newHeight > window.innerHeight * 0.70) {
+                newHeight = window.innerHeight * 0.70;
+                newWidth = newHeight * aspectRatio;
+            }
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+
+            if (gameWasRunning) {
+                initGame();
+            } else if (!gameOverMessage.classList.contains('hidden')) {
+                drawPlaceholderScreen();
+            } else {
+                drawPlaceholderScreen();
+            }
+        });
+
+        function drawPlaceholderScreen() {
+            const roadAreaWidth = canvas.width * (gameWidth / (gameWidth + signAreaWidth));
+            const scaleFactor = roadAreaWidth / gameWidth;
+
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#4a4a4a';
+            ctx.fillRect(0, 0, roadAreaWidth, canvas.height);
+
+            const shoulderWidth = 30 * scaleFactor;
+            ctx.fillStyle = '#303030';
+            ctx.fillRect(0, 0, shoulderWidth, canvas.height);
+            ctx.fillRect(roadAreaWidth - shoulderWidth, 0, shoulderWidth, canvas.height);
+
+            const grassWidth = 25 * scaleFactor;
+            ctx.fillStyle = '#004d00';
+            ctx.fillRect(0, 0, grassWidth, canvas.height);
+            ctx.fillRect(roadAreaWidth - grassWidth, 0, grassWidth, canvas.height);
+
+            ctx.fillStyle = '#cccccc';
+            for (let i = 0; i < Math.ceil(canvas.height / (roadLineHeight * scaleFactor + 20 * scaleFactor)) + 1; i++) {
+                ctx.fillRect(roadAreaWidth / 2 - (roadLineWidth * scaleFactor) / 2, i * (roadLineHeight * scaleFactor + 20 * scaleFactor), roadLineWidth * scaleFactor, roadLineHeight * scaleFactor);
+            }
+
+            // Placeholder "START GAME" text styling
+            const baseStartGameFontSize = 22 * scaleFactor;
+            const startGameFontSize = baseStartGameFontSize * 2;
+            const shadowOffsetMain = 4 * scaleFactor;
+            const shadowColorDarker = "#200060";
+            const shadowColorDark = "#400090";
+            const mainTextColor = "#FF40C0";
+
+            ctx.textAlign = 'center';
+            ctx.font = `bold ${startGameFontSize}px 'Press Start 2P'`;
+
+            const textStartY = canvas.height / 2 - startGameFontSize * 0.6;
+            const lineOffset = startGameFontSize * 1.2;
+
+            // Draw "START" with layered shadow
+            ctx.fillStyle = shadowColorDarker;
+            ctx.fillText('START', roadAreaWidth / 2 + shadowOffsetMain, textStartY + shadowOffsetMain);
+            ctx.fillStyle = shadowColorDark;
+            ctx.fillText('START', roadAreaWidth / 2 + shadowOffsetMain / 2, textStartY + shadowOffsetMain / 2);
+            ctx.fillStyle = mainTextColor;
+            ctx.fillText('START', roadAreaWidth / 2, textStartY);
+
+            // Draw "GAME" with layered shadow
+            ctx.fillStyle = shadowColorDarker;
+            ctx.fillText('GAME', roadAreaWidth / 2 + shadowOffsetMain, textStartY + lineOffset + shadowOffsetMain);
+            ctx.fillStyle = shadowColorDark;
+            ctx.fillText('GAME', roadAreaWidth / 2 + shadowOffsetMain / 2, textStartY + lineOffset + shadowOffsetMain / 2);
+            ctx.fillStyle = mainTextColor;
+            ctx.fillText('GAME', roadAreaWidth / 2, textStartY + lineOffset);
+
+            // Draw placeholder sign with rounded corners and adjusted text sizes
+            const signAreaX = roadAreaWidth;
+            const signAreaActualWidth = canvas.width - roadAreaWidth;
+            const signSizeReductionFactor = 0.9;
+
+            let mainSignTextSize = 12 * scaleFactor * 1.4 * signSizeReductionFactor;
+            let mainSignNumberSize = 28 * scaleFactor * 1.4 * signSizeReductionFactor;
+            const mainSignCornerRadius = 6 * scaleFactor * signSizeReductionFactor;
+            const mainSignPaddingX = 8 * scaleFactor * signSizeReductionFactor;
+            const mainSignPaddingY = 6 * scaleFactor * signSizeReductionFactor;
+
+            ctx.font = `bold ${mainSignTextSize}px 'Press Start 2P'`;
+            const speedTextWidth = ctx.measureText("SPEED").width;
+            const limitTextWidth = ctx.measureText("LIMIT").width;
+            ctx.font = `bold ${mainSignNumberSize}px 'Press Start 2P'`;
+            const numberTextWidth = ctx.measureText(speedLimitPolice.toString()).width;
+            const maxMainTextWidth = Math.max(speedTextWidth, limitTextWidth, numberTextWidth);
+            const mainSignFaceWidth = maxMainTextWidth + mainSignPaddingX * 2;
+            const spacingBetweenLines = 4 * scaleFactor * signSizeReductionFactor;
+            const explicitGap = 6 * scaleFactor * signSizeReductionFactor;
+            const mainSignFaceHeight = (mainSignPaddingY * 2) + mainSignTextSize + spacingBetweenLines + mainSignTextSize + explicitGap + mainSignNumberSize;
+
+            const mainSignFaceX = signAreaX + (signAreaActualWidth - mainSignFaceWidth) / 2;
+            const mainSignFaceY = canvas.height * 0.05 + (canvas.height * 0.45 - (mainSignFaceHeight * 2 + 10 * scaleFactor * signSizeReductionFactor)) / 2;
+            drawRoundedRect(mainSignFaceX, mainSignFaceY, mainSignFaceWidth, mainSignFaceHeight, mainSignCornerRadius, '#FFFFFF', '#000000', 2 * scaleFactor * signSizeReductionFactor);
+
+            ctx.fillStyle = '#000000';
+            ctx.textAlign = 'center';
+            let currentBaselineY = mainSignFaceY + mainSignPaddingY + mainSignTextSize;
+            ctx.font = `bold ${mainSignTextSize}px 'Press Start 2P'`;
+            ctx.fillText('SPEED', mainSignFaceX + mainSignFaceWidth / 2, currentBaselineY);
+            currentBaselineY += mainSignTextSize + spacingBetweenLines;
+            ctx.fillText('LIMIT', mainSignFaceX + mainSignFaceWidth / 2, currentBaselineY);
+            currentBaselineY += mainSignTextSize + explicitGap;
+            ctx.font = `bold ${mainSignNumberSize}px 'Press Start 2P'`;
+            ctx.fillText(speedLimitPolice.toString(), mainSignFaceX + mainSignFaceWidth / 2, currentBaselineY);
+
+            const yourSpeedSignFaceWidth = mainSignFaceWidth;
+            const yourSpeedSignFaceHeight = mainSignFaceHeight;
+            const yourSpeedSignCornerRadius = mainSignCornerRadius;
+            const yourSpeedSignFaceX = mainSignFaceX;
+            const yourSpeedSignFaceY = mainSignFaceY + mainSignFaceHeight + 10 * scaleFactor * signSizeReductionFactor;
+            drawRoundedRect(yourSpeedSignFaceX, yourSpeedSignFaceY, yourSpeedSignFaceWidth, yourSpeedSignFaceHeight, yourSpeedSignCornerRadius, '#000000', '#FFFFFF', 1.5 * scaleFactor * signSizeReductionFactor);
+
+            let yourSpeedTextSize = mainSignTextSize;
+            let yourSpeedNumberSize = mainSignNumberSize;
+
+            currentBaselineY = yourSpeedSignFaceY + mainSignPaddingY + yourSpeedTextSize;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `bold ${yourSpeedTextSize}px 'Press Start 2P'`;
+            ctx.fillText('YOUR', yourSpeedSignFaceX + yourSpeedSignFaceWidth / 2, currentBaselineY);
+            currentBaselineY += yourSpeedTextSize + spacingBetweenLines;
+            ctx.fillText('SPEED', yourSpeedSignFaceX + yourSpeedSignFaceWidth / 2, currentBaselineY);
+            currentBaselineY += yourSpeedTextSize + explicitGap;
+            ctx.font = `bold ${yourSpeedNumberSize}px 'Press Start 2P'`;
+            ctx.fillText("0", yourSpeedSignFaceX + yourSpeedSignFaceWidth / 2, currentBaselineY);
+        }
+
+        // Initial setup on load
+        highScoreDisplay.textContent = highScore;
+        const totalGameWidthWithSign = gameWidth + signAreaWidth;
+        const aspectRatio = totalGameWidthWithSign / gameHeight;
+        let initialWidth = Math.min(window.innerWidth * 0.95, 700);
+        let initialHeight = initialWidth / aspectRatio;
+        if (initialHeight > window.innerHeight * 0.70) {
+            initialHeight = window.innerHeight * 0.70;
+            initialWidth = initialHeight * aspectRatio;
+        }
+        canvas.width = initialWidth;
+        canvas.height = initialHeight;
+        updateSpeed();
+        drawPlaceholderScreen();
+
+    </script>
+</body>
+
+</html>
